@@ -9,6 +9,7 @@
 
 @interface WifiManager () <CLLocationManagerDelegate>
 @property (nonatomic,strong) CLLocationManager *locationManager;
+@property (nonatomic,strong) NEHotspotConfiguration *hotspotConfiguration;
 @property (nonatomic) BOOL solved;
 @end
 @implementation WifiManager
@@ -78,6 +79,7 @@ RCT_EXPORT_METHOD(connectToSSIDPrefix:(NSString*)ssid
              if (error != nil) {
                  reject([self parseError:error], @"Error while configuring WiFi", error);
              } else {
+                 self.hotspotConfiguration = configuration;
                  resolve(nil);
              }
          }];
@@ -104,6 +106,7 @@ RCT_EXPORT_METHOD(connectToProtectedSSIDPrefix:(NSString*)ssid
                 // Verify SSID connection
                 [self getWifiSSID:^(NSString* result) {
                     if ([result hasPrefix:ssid]){
+                        self.hotspotConfiguration = configuration;
                         resolve(nil);
                     } else {
                         reject([ConnectError code:UnableToConnect], [NSString stringWithFormat:@"%@/%@", @"Unable to connect to Wi-Fi with prefix ", ssid], nil);
@@ -172,6 +175,7 @@ RCT_EXPORT_METHOD(connectToProtectedSSIDOnce:(NSString*)ssid
                             tries++;
                             
                             if (success){
+                                self.hotspotConfiguration = configuration;
                                 resolve(nil);
                                 dispatch_suspend(dispatchSource);
                             } else if (tries > maxTries) {
@@ -199,8 +203,13 @@ RCT_EXPORT_METHOD(disconnectFromSSID:(NSString*)ssid
                   rejecter:(RCTPromiseRejectBlock)reject) {
 
     if (@available(iOS 11.0, *)) {
-        [[NEHotspotConfigurationManager sharedManager] removeConfigurationForSSID:ssid];
-        resolve(nil);
+        if (self.hotspotConfiguration != nil) {
+            [[NEHotspotConfigurationManager sharedManager] removeConfigurationForSSID:ssid];
+            self.hotspotConfiguration = nil;
+            resolve(nil);
+        } else {
+            reject([ConnectError code:Invalid], [NSString stringWithFormat:@"Configuration (SSID: %@) was created outside the app", ssid], nil);
+        }
     } else {
         reject([ConnectError code:UnavailableForOSVersion], @"Not supported in iOS<11.0", nil);
     }
