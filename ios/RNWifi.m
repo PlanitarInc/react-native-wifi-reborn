@@ -161,8 +161,8 @@ RCT_EXPORT_METHOD(connectToProtectedSSIDOnce:(NSString*)ssid
                     // The original code here checked immediately, but sometimes this completionHandler is called before
                     // the connection is successful.
                     __block int tries = 0;
-                    __block int maxTries = 20;
-                    double intervalSeconds = 0.5;
+                    __block int maxTries = 3;
+                    double intervalSeconds = 0.3;
                     
                     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
                     dispatch_source_t dispatchSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
